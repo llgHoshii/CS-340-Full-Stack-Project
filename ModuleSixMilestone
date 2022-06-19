@@ -1,0 +1,157 @@
+from jupyter_plotly_dash import JupyterDash
+
+import dash
+import dash_leaflet as dl
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
+import dash_table
+from dash.dependencies import Input, Output
+import base64
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from pymongo import MongoClient
+
+
+# Importing CRUD from AnimalShelter
+from animal_shelter import AnimalShelter
+
+
+
+###########################
+# Data Manipulation / Model
+###########################
+#Hard coded username and password for the mongoDB
+
+username = "aacuser"
+password = "hoshii"
+shelter = AnimalShelter(username, password)
+
+
+# class read method must support return of cursor object and accept projection json input
+df = pd.DataFrame.from_records(shelter.read({}))
+
+
+
+
+#########################
+# Dashboard Layout / View
+#########################
+app = JupyterDash ('Dash DataTable Only')
+
+app.layout = html.Div([
+    dcc.Input(id = 'input', placeholder = 'Enter a search value...', type = 'text', value = ''),
+    html.Div(id='hidden-div',style = {'display':'none'}),
+    html.Div(className='row',style={'display': 'flex'},
+             children=[html.Div(id='map-id',className='col s12 m6',)]),
+    html.Hr(),
+    html.Div(id='graph-id',className='col s12 m6',),
+    html.Center(html.B(html.H1('Lansberry\'s SNHU CS-340 Dashboard'))),
+    html.Hr(),
+    html.Div(id='hidden-div', style={'display':'flex'}, className = 'row',
+             children =[
+                html.Button(id='submit-button-one',n_clicks=0, children='Cats'),
+                html.Button(id='submit-button-two',n_clicks=0, children='Dogs'),
+                           ]),
+
+    
+    dash_table.DataTable(
+       id='datatable-id',
+       editable = False,
+       filter_action = "native",
+       sort_mode = "multi",
+       column_selectable = False,
+       row_deletable = False,
+       selected_columns = [],
+       selected_rows = [],
+       page_action = "native",
+       page_current= 0,
+       page_size = 10,
+       columns=[
+           {"name": i, "id": i, "deletable": False, "selectable": True} for i in df.columns
+       ],
+       data=df.to_dict('records'),
+    ),   
+    html.Br(),
+    html.Hr(),
+    
+])
+
+#############################################
+# Interaction Between Components / Controller
+#############################################
+#This callback will highlight a row on the data table when the user selects it
+@app.callback(
+    Output('datatable-id', 'style_data_conditional'),
+    [Input('datatable-id', 'selected_columns'), ]
+)
+def update_styles(selected_columns):
+    return [{
+        'if': { 'column_id': i },
+        'background_color': '#D2F3FF'
+    } for i in selected_columns]
+
+#This callback will make buttons to sort according to clicks
+@app.callback(
+    Output('datatable-id', 'data'),
+    [Input('submit-button-one','n_clicks'),
+     Input('submit-button-two','n_clicks')]
+)
+def on_click(bt1,bt2):
+    #start case
+    if(int(bt1) == 0 and int(bt2) == 0):
+        df = pd.DataFrame.from_records(Shelter.read({}))
+    
+    #defyning button clicks and what it means to the code
+    elif (int(bt1)>int(bt2)):
+        df = pd.DataFrame(list(Shelter.read({"animal_type":"Cat"})))
+    elif (int(bt2)>int(bt1)):
+        df = pd.DataFrame(list(Shelter.read({"animal_type":"Dog"})))
+    
+    return df.to_dict('records')
+
+#This callback will make a pie chart according to breeds
+@app.callback(
+    Output('graph-id',"children"),
+    [Input('datatable-id', "derived_viewport_data")])
+def update_graphs(view_data):
+    dff = pd.DataFrame.from_dict(view_data)
+    breeds = []
+    for i in range(0,dff.__len__() -1):
+        breeds.append(str(dff.iloc[i,4]))
+    return[
+        dcc.Graph(figure = {'data':[{'labels':breeds, 'type':'pie'}],
+                           'layout':{'title':'Breeds',}})
+    ]
+    
+#This callback displays the geolocation for the given coordinates
+@app.callback(
+   Output('map-id', "children"),
+   [Input('datatable-id', "derived_viewport_data")])
+def update_map(viewData):
+    dff = pd.DataFrame.from_dict(viewData)
+    # Frank the chihuahua is located at 30.75,-97.55 near Austin.
+    return [
+        dl.Map(style={'width': '1000px', 'height': '500px'}, center=[dff.iloc[1, 13], dff.iloc[1,14]], zoom=10,
+               children=[
+                    dl.TileLayer(id="base-layer-id"),
+                    # Marker with tool tip and popup
+                    # We use the second animal on the list starting at 1 becasue entry 0 has no name and i like dogs more!
+                    dl.Marker(position=[dff.iloc[1,13], dff.iloc[1,14]], children=[
+                    dl.Tooltip(dff.iloc[1,4]),
+                    dl.Popup([
+                        html.H1(dff.iloc[1,9]),
+                        html.P(dff.iloc[1,8])
+                    
+                    ])
+                ])
+            ])
+        ]
+
+
+    
+
+app
