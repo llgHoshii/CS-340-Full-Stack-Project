@@ -15,3 +15,8 @@ When developing the dashboard i recall not understanding the code at all. After 
 
 Computer scientists are the doctors of the 21st century. We study how computers work on a micro and macro level to find better and more efficient solutions to everyday problems. Without computer scientists many of our daily activietes would not be possible.
 My work helps companies like Grazioso Salvare be more efficient which saves money and helps them deliver their mission more rapidly.
+
+#**Dashboard Pictures:**
+
+![image](https://user-images.githubusercontent.com/55736892/175848149-076e2669-9586-4d70-9f0f-73ad6df6c713.png)
+![image](https://user-images.githubusercontent.com/55736892/175848223-0fe80298-add9-4f5e-a4d3-ba9fc66a5c49.png)
